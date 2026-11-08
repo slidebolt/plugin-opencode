@@ -4,7 +4,7 @@ This repository contains the Slidebolt OpenCode Plugin. It translates between `o
 
 ## Dependencies
 - **Internal:** `sb-contract`, `sb-domain`, `sb-messenger-sdk`, `sb-runtime`, `sb-storage-sdk`, `sb-testkit`.
-- **Runtime:** an `opencode serve` instance, reached through `OPENCODE_HOST_URL` and `OPENCODE_HOST_PASSWORD`. See `opencode-host`.
+- **Runtime:** an `opencode serve` instance, reached through `OPENCODE_HOST_URL` and `OPENCODE_HOST_PASSWORD`. See `release/opencode` (its AGENTS.md and opencode.json).
 
 ## Build Process
 - **Type:** Go Application (Plugin).
