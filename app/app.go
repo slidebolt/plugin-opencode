@@ -78,6 +78,12 @@ func (a *App) Hello() contract.HelloResponse {
 		ContractVersion: contract.ContractVersion,
 		Definitions:     contract.DescribePlugin("OpenCode", "Exposes conversational coding agents and their observable state.", "agent", "binary_sensor", "text"),
 		DependsOn:       []string{"messenger", "storage"},
+		Setup: &contract.SetupDefinition{Mode: contract.SetupSelectable, Category: "Agents", Fields: []contract.SetupField{
+			{Key: "host_url", Environment: "OPENCODE_HOST_URL", Name: "Host URL", Description: "OpenCode server base URL.", Control: contract.SetupText, Format: "uri"},
+			{Key: "host_password", Environment: "OPENCODE_HOST_PASSWORD", Name: "Host password", Description: "Password for the OpenCode server.", Control: contract.SetupSecret, Sensitive: true},
+			{Key: "agents", Environment: "OPENCODE_AGENTS", Name: "Agents", Description: "Comma-separated agent names exposed by this plugin.", Control: contract.SetupText},
+			{Key: "prompt_timeout_seconds", Environment: "OPENCODE_PROMPT_TIMEOUT_SECONDS", Name: "Prompt timeout", Description: "Maximum prompt runtime in seconds.", Control: contract.SetupText, Format: "integer", Advanced: true, Default: json.RawMessage(`"120"`)},
+		}, Constraints: []contract.SetupConstraint{{Kind: "all_or_none", Fields: []string{"host_url", "host_password"}}}},
 	}
 }
 
