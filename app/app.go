@@ -76,6 +76,7 @@ func (a *App) Hello() contract.HelloResponse {
 		ID:              PluginID,
 		Kind:            contract.KindPlugin,
 		ContractVersion: contract.ContractVersion,
+		Definitions:     contract.DescribePlugin("OpenCode", "Exposes conversational coding agents and their observable state.", "agent", "binary_sensor", "text"),
 		DependsOn:       []string{"messenger", "storage"},
 	}
 }
