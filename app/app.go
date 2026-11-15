@@ -28,7 +28,7 @@ const (
 	devicePrefix   = "agent_"
 	entityPrompt   = "prompt"
 	entityOnline   = "availability"
-	defaultTimeout = 120
+	defaultTimeout = 300
 	healthInterval = 15 * time.Second
 	defaultSession = "default"
 	queueSize      = 16
@@ -82,7 +82,7 @@ func (a *App) Hello() contract.HelloResponse {
 			{Key: "host_url", Environment: "OPENCODE_HOST_URL", Name: "Host URL", Description: "OpenCode server base URL.", Control: contract.SetupText, Format: "uri"},
 			{Key: "host_password", Environment: "OPENCODE_HOST_PASSWORD", Name: "Host password", Description: "Password for the OpenCode server.", Control: contract.SetupSecret, Sensitive: true},
 			{Key: "agents", Environment: "OPENCODE_AGENTS", Name: "Agents", Description: "Comma-separated agent names exposed by this plugin.", Control: contract.SetupText},
-			{Key: "prompt_timeout_seconds", Environment: "OPENCODE_PROMPT_TIMEOUT_SECONDS", Name: "Prompt timeout", Description: "Maximum prompt runtime in seconds.", Control: contract.SetupText, Format: "integer", Advanced: true, Default: json.RawMessage(`"120"`)},
+			{Key: "prompt_timeout_seconds", Environment: "OPENCODE_PROMPT_TIMEOUT_SECONDS", Name: "Prompt timeout", Description: "Maximum prompt runtime in seconds.", Control: contract.SetupText, Format: "integer", Advanced: true, Default: json.RawMessage(`"300"`)},
 		}, Constraints: []contract.SetupConstraint{{Kind: "all_or_none", Fields: []string{"host_url", "host_password"}}}},
 	}
 }
@@ -304,6 +304,9 @@ func (a *App) run(ag *agent, p domain.AgentPrompt) {
 	ctx, cancel := context.WithTimeout(a.ctx, a.limit)
 	defer cancel()
 	result, err := a.ask(ctx, ag, session, p.Text, cancel)
+	if ctx.Err() == context.DeadlineExceeded {
+		a.abortSession(ag)
+	}
 
 	ag.mu.Lock()
 	ag.abort, ag.running = nil, ""
@@ -325,6 +328,23 @@ func (a *App) run(ag *agent, p domain.AgentPrompt) {
 	ag.mu.Unlock()
 	if a.ctx.Err() == nil {
 		a.save(ag)
+	}
+}
+
+// abortSession tells the server to stop work after the request context has ended.
+// Canceling only the HTTP request is insufficient: OpenCode continues the session
+// unless its abort endpoint is called explicitly.
+func (a *App) abortSession(ag *agent) {
+	ag.mu.Lock()
+	session := ag.running
+	ag.mu.Unlock()
+	if a.host == nil || session == "" {
+		return
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, 5*time.Second)
+	defer cancel()
+	if err := a.host.Abort(ctx, session); err != nil {
+		log.Printf("plugin-opencode: %s: abort after timeout: %v", ag.name, err)
 	}
 }
 

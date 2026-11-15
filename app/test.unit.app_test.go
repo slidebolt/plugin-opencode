@@ -305,6 +305,11 @@ func TestTimeoutIsReported(t *testing.T) {
 	h := start(t, func(f *fakeServer) { f.block = make(chan struct{}) })
 	h.prompt("long", "s")
 	h.eventually("timeout", func() bool { s := h.state(); return s.Status == "error" && s.Error == "timed out" })
+	h.f.mu.Lock()
+	defer h.f.mu.Unlock()
+	if h.f.aborted != 1 {
+		t.Fatalf("timed out session was not aborted: %d", h.f.aborted)
+	}
 }
 
 func TestEmptyPromptAndOtherEntitiesAreIgnored(t *testing.T) {
